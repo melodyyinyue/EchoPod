@@ -1,0 +1,33 @@
+name: EchoPod
+
+options:
+  bundleIdPrefix: com.melody
+  deploymentTarget:
+    macOS: "14.0"
+
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_VERSION: "6.0"
+
+targets:
+  EchoPod:
+    type: application
+    platform: macOS
+    sources:
+      - path: EchoPod
+    resources:
+      - path: EchoPod/Resources
+    info:
+      path: EchoPod/Info.plist
+      properties:
+        CFBundleDisplayName: EchoPod
+        CFBundleName: EchoPod
+        LSApplicationCategoryType: public.app-category.music
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.melody.echopod
+        INFOPLIST_FILE: EchoPod/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1
