@@ -2,8 +2,46 @@ import Foundation
 import SwiftData
 
 enum RSSError: Error {
-	case invalidResponse
-	case parseFailed
+	case invalidURL
+	case networkError(underlying: Error)
+	case timeout
+	case httpStatus(Int, String?)
+	case parseFailed(underlying: Error?)
+}
+
+extension RSSError: LocalizedError {
+	var errorDescription: String? {
+		switch self {
+		case .invalidURL:
+			return "RSS 链接不合法"
+		case .networkError(let underlying):
+			return "网络请求失败：\(underlying.localizedDescription)"
+		case .timeout:
+			return "网络请求超时，请检查网络连接"
+		case .httpStatus(let code, let body):
+			// 为常见 HTTP 状态码提供友好的错误提示
+			let friendlyMessage: String
+			switch code {
+			case 404:
+				friendlyMessage = "RSS 源不存在"
+			case 403:
+				friendlyMessage = "访问被拒绝，该 RSS 源可能需要授权"
+			case 500...599:
+				friendlyMessage = "RSS 服务器错误"
+			case 301, 302, 307, 308:
+				friendlyMessage = "RSS 源已重定向"
+			default:
+				friendlyMessage = "RSS 请求失败"
+			}
+			
+			if let body, !body.isEmpty {
+				return "\(friendlyMessage)（HTTP \(code)）：\(body)"
+			}
+			return "\(friendlyMessage)（HTTP \(code)）"
+		case .parseFailed(let underlying):
+			return "RSS 解析失败：\(underlying?.localizedDescription ?? "未知原因")"
+		}
+	}
 }
 
 @MainActor
@@ -11,9 +49,18 @@ final class RSSService {
 	private let modelContext: ModelContext
 	private let session: URLSession
 
-	init(modelContext: ModelContext, session: URLSession = .shared) {
+	init(modelContext: ModelContext, session: URLSession? = nil) {
 		self.modelContext = modelContext
-		self.session = session
+		
+		// 如果未提供 session，创建带超时配置的自定义 session
+		if let session {
+			self.session = session
+		} else {
+			let config = URLSessionConfiguration.default
+			config.timeoutIntervalForRequest = 30.0  // 请求超时 30 秒
+			config.timeoutIntervalForResource = 60.0  // 资源总超时 60 秒
+			self.session = URLSession(configuration: config)
+		}
 	}
 
 	func refreshAllFeeds() async throws {
@@ -26,15 +73,50 @@ final class RSSService {
 	}
 
 	func refresh(feed: PodcastFeed) async throws {
-		guard let url = URL(string: feed.url) else { return }
-		let (data, response) = try await session.data(from: url)
-		guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-			throw RSSError.invalidResponse
+		guard let url = URL(string: feed.url) else { throw RSSError.invalidURL }
+
+		var req = URLRequest(url: url)
+		req.setValue(
+			"application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
+			forHTTPHeaderField: "Accept"
+		)
+		// 使用浏览器风格的 User-Agent 来避免被某些网站拦截
+		req.setValue(
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+			forHTTPHeaderField: "User-Agent"
+		)
+		req.setValue("en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7", forHTTPHeaderField: "Accept-Language")
+
+		// 捕获网络错误和超时错误
+		let (data, response): (Data, URLResponse)
+		do {
+			(data, response) = try await session.data(for: req)
+		} catch let error as URLError {
+			// 处理超时错误
+			if error.code == .timedOut {
+				throw RSSError.timeout
+			}
+			// 其他网络错误
+			throw RSSError.networkError(underlying: error)
+		} catch {
+			// 其他未知错误
+			throw RSSError.networkError(underlying: error)
+		}
+		
+		guard let http = response as? HTTPURLResponse else {
+			throw RSSError.httpStatus(-1, "无效响应")
+		}
+		guard (200..<300).contains(http.statusCode) else {
+			let snippet = String(data: data.prefix(512), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+			throw RSSError.httpStatus(http.statusCode, snippet)
 		}
 
 		let parser = RSSParser()
-		guard let parsed = parser.parse(data: data) else {
-			throw RSSError.parseFailed
+		let parsed: RSSParsedFeed
+		do {
+			parsed = try parser.parse(data: data)
+		} catch {
+			throw RSSError.parseFailed(underlying: error)
 		}
 
 		feed.title = parsed.channelTitle ?? feed.title

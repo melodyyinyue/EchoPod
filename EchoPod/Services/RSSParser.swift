@@ -17,11 +17,16 @@ struct RSSItem {
 	var durationSeconds: Int?
 }
 
+enum RSSParserError: Error {
+	case parseFailed(underlying: Error?)
+}
+
 final class RSSParser: NSObject {
 	private var currentElement: String = ""
 	private var currentText: String = ""
 
 	private var inItem = false
+	private var insideChannelImage = false
 	private var parsedFeed = RSSParsedFeed(items: [])
 	private var currentItem: TempItem?
 
@@ -35,41 +40,72 @@ final class RSSParser: NSObject {
 		var duration: String?
 	}
 
-	func parse(data: Data) -> RSSParsedFeed? {
+	func parse(data: Data) throws -> RSSParsedFeed {
 		parsedFeed = RSSParsedFeed(items: [])
 		currentItem = nil
 		inItem = false
+		insideChannelImage = false
 		currentElement = ""
 		currentText = ""
 
 		let xml = XMLParser(data: data)
 		xml.delegate = self
-		return xml.parse() ? parsedFeed : nil
+		let ok = xml.parse()
+		if !ok {
+			throw RSSParserError.parseFailed(underlying: xml.parserError)
+		}
+		return parsedFeed
 	}
 }
 
 extension RSSParser: XMLParserDelegate {
 	func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
-		currentElement = elementName
+		currentElement = (qName ?? elementName)
 		currentText = ""
 
-		if elementName == "item" {
+		let elementLower = elementName.lowercased()
+		let qualifiedLower = (qName ?? elementName).lowercased()
+
+		if elementLower == "item" || elementLower == "entry" {
 			inItem = true
 			currentItem = TempItem()
 			return
 		}
 
-		if inItem {
-			if elementName == "enclosure", let url = attributeDict["url"] {
-				currentItem?.audioURL = url
+		if !inItem {
+			if elementLower == "image" {
+				insideChannelImage = true
 			}
-			if (qName == "itunes:image" || elementName == "itunes:image" || elementName == "image"), let href = attributeDict["href"] {
-				currentItem?.imageURL = href
-			}
-		} else {
-			if (qName == "itunes:image" || elementName == "itunes:image"), let href = attributeDict["href"] {
+			if qualifiedLower == "itunes:image", let href = attributeDict["href"], !href.isEmpty {
 				parsedFeed.channelImageURL = href
 			}
+			return
+		}
+
+		// in item
+		if elementLower == "enclosure", let urlString = attributeDict["url"], let url = URL(string: urlString) {
+			currentItem?.audioURL = url.absoluteString
+		}
+
+		if elementLower == "link" {
+			let rel = attributeDict["rel"]?.lowercased()
+			let type = attributeDict["type"]?.lowercased()
+			if rel == "enclosure", let href = attributeDict["href"], let url = URL(string: href) {
+				currentItem?.audioURL = url.absoluteString
+			} else if let type, type.hasPrefix("audio"), let href = attributeDict["href"], let url = URL(string: href) {
+				currentItem?.audioURL = url.absoluteString
+			}
+		}
+
+		if qualifiedLower == "media:content", let urlString = attributeDict["url"], let url = URL(string: urlString) {
+			currentItem?.audioURL = url.absoluteString
+		}
+
+		if qualifiedLower.hasSuffix(":image"), let href = attributeDict["href"], !href.isEmpty {
+			currentItem?.imageURL = href
+		}
+		if qualifiedLower == "itunes:image", let href = attributeDict["href"], !href.isEmpty {
+			currentItem?.imageURL = href
 		}
 	}
 
@@ -78,45 +114,67 @@ extension RSSParser: XMLParserDelegate {
 	}
 
 	func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-		let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+		let element = (qName ?? elementName).lowercased()
+		let trimmed = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
 		defer {
 			currentElement = ""
 			currentText = ""
 		}
 
 		if inItem {
-			switch elementName {
-			case "guid":
-				if !text.isEmpty { currentItem?.guid = text }
+			switch element {
+			case "guid", "id":
+				if !trimmed.isEmpty { currentItem?.guid = trimmed }
 			case "title":
-				if !text.isEmpty { currentItem?.title = text }
-			case "description", "summary", "content:encoded":
-				if !text.isEmpty { currentItem?.summary = text }
-			case "pubDate":
-				if !text.isEmpty { currentItem?.pubDate = text }
-			case "itunes:duration":
-				if !text.isEmpty { currentItem?.duration = text }
-			case "item":
-				inItem = false
-				if let item = currentItem, let audio = item.audioURL {
-					let date = DateParsing.parseRfc822(item.pubDate)
-					let durationSeconds = DateParsing.parseDurationSeconds(item.duration)
-					parsedFeed.items.append(RSSItem(guid: item.guid, title: item.title, summary: item.summary, publishedAt: date, audioURL: audio, imageURL: item.imageURL, durationSeconds: durationSeconds))
+				if !trimmed.isEmpty { currentItem?.title = trimmed }
+			case "description", "summary", "content", "content:encoded":
+				if !(currentItem?.summary?.isEmpty == false), !trimmed.isEmpty {
+					currentItem?.summary = trimmed
 				}
-				currentItem = nil
+			case "pubdate", "published", "updated":
+				if !trimmed.isEmpty { currentItem?.pubDate = trimmed }
+			case "itunes:duration":
+				if !trimmed.isEmpty { currentItem?.duration = trimmed }
 			default:
 				break
+			}
+
+			let elementLower = elementName.lowercased()
+			if elementLower == "item" || elementLower == "entry" {
+				inItem = false
+				if let item = currentItem, let audio = item.audioURL, !audio.isEmpty {
+					let date = DateParsing.parseRSSDate(item.pubDate)
+					let durationSeconds = DateParsing.parseDurationSeconds(item.duration)
+					parsedFeed.items.append(
+						RSSItem(
+							guid: item.guid,
+							title: item.title,
+							summary: item.summary,
+							publishedAt: date,
+							audioURL: audio,
+							imageURL: item.imageURL,
+							durationSeconds: durationSeconds
+						)
+					)
+				}
+				currentItem = nil
 			}
 			return
 		}
 
-		switch elementName {
+		switch element {
 		case "title":
-			if parsedFeed.channelTitle == nil, !text.isEmpty { parsedFeed.channelTitle = text }
-		case "itunes:author":
-			if parsedFeed.channelAuthor == nil, !text.isEmpty { parsedFeed.channelAuthor = text }
+			if parsedFeed.channelTitle == nil, !trimmed.isEmpty { parsedFeed.channelTitle = trimmed }
+		case "itunes:author", "author", "dc:creator":
+			if parsedFeed.channelAuthor == nil, !trimmed.isEmpty { parsedFeed.channelAuthor = trimmed }
+		case "url":
+			if insideChannelImage, parsedFeed.channelImageURL == nil, !trimmed.isEmpty { parsedFeed.channelImageURL = trimmed }
 		default:
 			break
+		}
+
+		if elementName.lowercased() == "image" {
+			insideChannelImage = false
 		}
 	}
 }

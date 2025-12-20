@@ -18,12 +18,29 @@ enum DateParsing {
 		}
 	}()
 
+	nonisolated(unsafe) private static let iso8601: ISO8601DateFormatter = {
+		let f = ISO8601DateFormatter()
+		f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+		return f
+	}()
+
 	static func parseRfc822(_ s: String?) -> Date? {
 		guard let s, !s.isEmpty else { return nil }
 		for df in rfc822Formatters {
 			if let d = df.date(from: s) { return d }
 		}
 		return nil
+	}
+
+	static func parseRSSDate(_ s: String?) -> Date? {
+		guard let s else { return nil }
+		let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+		if trimmed.isEmpty { return nil }
+		if let d = parseRfc822(trimmed) { return d }
+		if let d = iso8601.date(from: trimmed) { return d }
+		let fallback = ISO8601DateFormatter()
+		fallback.formatOptions = [.withInternetDateTime]
+		return fallback.date(from: trimmed)
 	}
 
 	static func parseDurationSeconds(_ s: String?) -> Int? {

@@ -5,6 +5,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 	case subscriptions = "我的订阅"
 	case echoPodcasts = "我的回音播客"
 	case settings = "设置"
+	case debug = "调试日志"
 
 	var id: String { rawValue }
 
@@ -14,6 +15,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 		case .subscriptions: return "dot.radiowaves.left.and.right"
 		case .echoPodcasts: return "waveform"
 		case .settings: return "gearshape"
+		case .debug: return "ladybug"
 		}
 	}
 }
@@ -25,7 +27,9 @@ struct RootView: View {
 		NavigationSplitView {
 			List(SidebarItem.allCases, selection: $selection) { item in
 				Label(item.rawValue, systemImage: item.systemImage)
+					.tag(item)
 			}
+			.listStyle(.sidebar)
 			.navigationTitle("EchoPod")
 		} detail: {
 			switch selection {
@@ -37,6 +41,8 @@ struct RootView: View {
 				EchoPodcastsView()
 			case .settings:
 				SettingsView()
+			case .debug:
+				DebugView()
 			case .none:
 				AllEpisodesView()
 			}
