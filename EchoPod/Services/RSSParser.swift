@@ -2,6 +2,7 @@ import Foundation
 
 struct RSSParsedFeed {
 	var channelTitle: String?
+	var channelDescription: String?
 	var channelAuthor: String?
 	var channelImageURL: String?
 	var items: [RSSItem]
@@ -165,6 +166,8 @@ extension RSSParser: XMLParserDelegate {
 		switch element {
 		case "title":
 			if parsedFeed.channelTitle == nil, !trimmed.isEmpty { parsedFeed.channelTitle = trimmed }
+		case "description", "itunes:summary":
+			if parsedFeed.channelDescription == nil, !trimmed.isEmpty { parsedFeed.channelDescription = trimmed }
 		case "itunes:author", "author", "dc:creator":
 			if parsedFeed.channelAuthor == nil, !trimmed.isEmpty { parsedFeed.channelAuthor = trimmed }
 		case "url":

@@ -9,7 +9,7 @@ struct EchoPodApp: App {
 
 	init() {
 		do {
-			modelContainer = try ModelContainer(for: PodcastFeed.self, PodcastEpisode.self, EchoPodcast.self, AppSettings.self)
+			modelContainer = try ModelContainer(for: PodcastFeed.self, PodcastEpisode.self, EchoPodcast.self, AppSettings.self, CoverDesignHistory.self)
 		} catch {
 			fatalError("Failed to create ModelContainer: \(error)")
 		}

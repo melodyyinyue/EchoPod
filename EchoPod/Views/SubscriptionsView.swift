@@ -24,26 +24,50 @@ struct SubscriptionsView: View {
                     List {
                         ForEach(feeds) { feed in
                             NavigationLink(value: feed) {
-                                HStack(spacing: 10) {
-                                    AsyncImage(url: URL(string: feed.imageURL ?? "")) { phase in
-                                        switch phase {
-                                        case .success(let img):
-                                            img.resizable().scaledToFill()
-                                        default:
-                                            LinearGradient(colors: [.gray.opacity(0.3), .gray.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                HStack(spacing: 12) {
+                                    // 封面图：优先本地，其次网络
+                                    Group {
+                                        if let path = feed.localCoverPath, FileManager.default.fileExists(atPath: path),
+                                           let nsImage = NSImage(contentsOfFile: path) {
+                                            Image(nsImage: nsImage)
+                                                .resizable()
+                                                .scaledToFill()
+                                        } else {
+                                            AsyncImage(url: URL(string: feed.imageURL ?? "")) { phase in
+                                                switch phase {
+                                                case .success(let img):
+                                                    img.resizable().scaledToFill()
+                                                default:
+                                                    LinearGradient(colors: [.gray.opacity(0.3), .gray.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                                }
+                                            }
                                         }
                                     }
-                                    .frame(width: 40, height: 40)
+                                    .frame(width: 50, height: 50)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(feed.title ?? feed.url)
+                                        Text(feed.title ?? "未命名播客")
                                             .font(.headline)
-                                        Text(feed.url)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                        
+                                        if let author = feed.author, !author.isEmpty {
+                                            Text(author)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(1)
+                                        }
+                                        
+                                        if let desc = feed.feedDescription?.trimmingCharacters(in: .whitespacesAndNewlines), !desc.isEmpty {
+                                            Text(desc)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary.opacity(0.8))
+                                                .lineLimit(2)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
                                     }
                                 }
+                                .padding(.vertical, 4)
                             }
                             .contextMenu {
                                 Button(role: .destructive) {

@@ -52,20 +52,7 @@ struct EchoPodcastDetailView: View {
 					.textSelection(.enabled)
 
 				// 生成中显示进度
-				if item.isGenerating {
-					VStack(spacing: 8) {
-						ProgressView()
-						if let msg = item.statusMessage {
-							Text(msg)
-								.font(.caption)
-								.foregroundStyle(.secondary)
-						}
-					}
-					.frame(maxWidth: .infinity)
-					.padding()
-					.background(Color.orange.opacity(0.1))
-					.clipShape(RoundedRectangle(cornerRadius: 8))
-				}
+				// 生成中显示进度 - 已移除，使用头部 Badge 指示即可
 				
 				// 失败显示错误
 				if item.isFailed, let err = item.errorMessage {
@@ -92,6 +79,8 @@ struct EchoPodcastDetailView: View {
 								player.togglePlayPause()
 							} else {
 								player.play(url: url)
+                                // 强制同步播放信息，确保 GlobalPlayerBar 能显示
+                                CurrentPlayingInfo.shared.currentEchoPodcast = item
 							}
 						} label: {
 							Label(isCurrent && player.isPlaying ? "暂停" : "播放", systemImage: isCurrent && player.isPlaying ? "pause.fill" : "play.fill")
@@ -109,29 +98,9 @@ struct EchoPodcastDetailView: View {
 					}
 				}
 				
-				// 播客脚本内容
+				// 播客脚本内容 - 列表显示
 				if let script = item.scriptContent, !script.isEmpty {
-					VStack(alignment: .leading, spacing: 12) {
-						HStack {
-							Image(systemName: "doc.text")
-								.foregroundStyle(AppTheme.primary)
-							Text("播客内容")
-								.font(.headline)
-							Spacer()
-						}
-						
-						Divider()
-						
-						Text(script)
-							.font(.body)
-							.lineSpacing(6)
-							.textSelection(.enabled)
-					}
-					.padding()
-					.background(
-						RoundedRectangle(cornerRadius: 12, style: .continuous)
-							.fill(Color(nsColor: .controlBackgroundColor).opacity(0.3))
-					)
+					ScriptListView(script: script)
 				}
 			}
 			.padding()
@@ -142,7 +111,12 @@ struct EchoPodcastDetailView: View {
 	
 	@ViewBuilder
 	private var coverImage: some View {
-		if let cover = item.coverURL, let coverURL = URL(string: cover) {
+		if let coverPath = item.localCoverPath, FileManager.default.fileExists(atPath: coverPath),
+		   let nsImage = NSImage(contentsOfFile: coverPath) {
+			Image(nsImage: nsImage)
+				.resizable()
+				.scaledToFill()
+		} else if let cover = item.coverURL, let coverURL = URL(string: cover) {
 			AsyncImage(url: coverURL) { phase in
 				switch phase {
 				case .empty:

@@ -5,8 +5,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 	case subscriptions = "我的订阅"
 	case durationFilter = "时长筛选"
 	case echoPodcasts = "我的回音"
+	case coverDesign = "封面设计"
 	case settings = "设置"
-	case debug = "调试日志"
 
 	var id: String { rawValue }
 
@@ -16,8 +16,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 		case .subscriptions: return "dot.radiowaves.left.and.right"
 		case .durationFilter: return "clock.badge.checkmark"
 		case .echoPodcasts: return "waveform"
+		case .coverDesign: return "photo.artframe"
 		case .settings: return "gearshape"
-		case .debug: return "ladybug"
 		}
 	}
 }
@@ -44,10 +44,10 @@ struct RootView: View {
                 DurationFilterView()
             case .echoPodcasts:
                 EchoPodcastsView()
+            case .coverDesign:
+                CoverDesignView()
             case .settings:
                 SettingsView()
-            case .debug:
-                DebugView()
             case .none:
                 AllEpisodesView()
             }

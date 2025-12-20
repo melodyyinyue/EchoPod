@@ -58,6 +58,9 @@ struct EchoPodcastsView: View {
 		if let path = item.localFilePath {
 			try? FileManager.default.removeItem(atPath: path)
 		}
+		if let coverPath = item.localCoverPath {
+			try? FileManager.default.removeItem(atPath: coverPath)
+		}
 		modelContext.delete(item)
 		try? modelContext.save()
 	}
@@ -69,6 +72,9 @@ struct EchoPodcastsView: View {
 			if let path = item.localFilePath {
 				try? FileManager.default.removeItem(atPath: path)
 			}
+			if let coverPath = item.localCoverPath {
+				try? FileManager.default.removeItem(atPath: coverPath)
+			}
 			modelContext.delete(item)
 		}
 		try? modelContext.save()
@@ -79,6 +85,9 @@ struct EchoPodcastsView: View {
 			if let path = item.localFilePath {
 				try? FileManager.default.removeItem(atPath: path)
 			}
+			if let coverPath = item.localCoverPath {
+				try? FileManager.default.removeItem(atPath: coverPath)
+			}
 			modelContext.delete(item)
 		}
 		try? modelContext.save()
@@ -88,6 +97,9 @@ struct EchoPodcastsView: View {
 		for item in items {
 			if let path = item.localFilePath {
 				try? FileManager.default.removeItem(atPath: path)
+			}
+			if let coverPath = item.localCoverPath {
+				try? FileManager.default.removeItem(atPath: coverPath)
 			}
 			modelContext.delete(item)
 		}
@@ -101,7 +113,12 @@ struct EchoPodcastRow: View {
 		HStack(spacing: 12) {
 			// 封面缩略图
 			Group {
-				if let coverURL = item.coverURL, let url = URL(string: coverURL) {
+				if let coverPath = item.localCoverPath, FileManager.default.fileExists(atPath: coverPath),
+				   let nsImage = NSImage(contentsOfFile: coverPath) {
+					Image(nsImage: nsImage)
+						.resizable()
+						.aspectRatio(contentMode: .fill)
+				} else if let coverURL = item.coverURL, let url = URL(string: coverURL) {
 					AsyncImage(url: url) { phase in
 						switch phase {
 						case .success(let image):

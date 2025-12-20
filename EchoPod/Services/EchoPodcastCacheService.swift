@@ -17,6 +17,17 @@ enum EchoPodcastCacheService {
 		return base.appendingPathComponent("\(name).mp3")
 	}
 
+	static func localCoverURL(taskID: String) throws -> URL {
+		let trimmed = taskID.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !trimmed.isEmpty else { throw CacheError.invalidTaskID }
+
+		let base = try downloadsDirectory()
+		try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+
+		let name = sha256Hex(trimmed).prefix(24)
+		return base.appendingPathComponent("\(name)_cover.jpg")
+	}
+
 	static func removeCachedFile(atPath path: String) throws {
 		let url = URL(fileURLWithPath: path)
 		guard FileManager.default.fileExists(atPath: url.path) else { return }

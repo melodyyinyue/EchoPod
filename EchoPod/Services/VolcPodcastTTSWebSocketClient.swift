@@ -58,12 +58,14 @@ struct VolcPodcastTTSWebSocketClient {
 		promptText: String,
 		inputID: String,
 		useHeadMusic: Bool,
+		speakers: [String] = ["zh_male_dayixiansheng_v2_saturn_bigtts", "zh_female_mizaitongxue_v2_saturn_bigtts"],
 		audioFormat: String = "mp3",
 		sampleRate: Int = 24000,
 		speechRate: Int = 0,
 		saveToLocalMP3: Bool = true,
 		onStatus: @escaping @Sendable (String) -> Void,
-		onAudioData: (@Sendable (Data) -> Void)? = nil  // 流式音频数据回调
+		onAudioData: (@Sendable (Data) -> Void)? = nil,  // 流式音频数据回调
+		onScript: (@Sendable (String, String) -> Void)? = nil  // 脚本文本回调：(speaker, text)
 	) async throws -> (taskID: String, audioURL: String, localFileURL: URL?) {
 		let url = URL(string: "wss://openspeech.bytedance.com/api/v3/sami/podcasttts")!
 		var req = URLRequest(url: url)
@@ -88,12 +90,16 @@ struct VolcPodcastTTSWebSocketClient {
 			localFileURL = dest
 		}
 
-		// Build payload for Action 4
+		// Build payload for Action 4 with speaker_info
 		let payload: [String: Any] = [
 			"input_id": inputID,
 			"action": 4,
 			"prompt_text": promptText,
 			"use_head_music": useHeadMusic,
+			"speaker_info": [
+				"random_order": true,
+				"speakers": speakers
+			],
 			"audio_config": [
 				"format": audioFormat,
 				"sample_rate": sampleRate,
@@ -156,6 +162,7 @@ struct VolcPodcastTTSWebSocketClient {
 							let speaker = (json["speaker"] as? String) ?? ""
 							debugLog("  Speaker: \(speaker), Text: \(text.prefix(50))", level: .info)
 							onStatus(speaker.isEmpty ? "生成中：\(text.prefix(20))" : "生成中（\(speaker)）：\(text.prefix(20))")
+						onScript?(speaker, text)
 						}
 					case EventType.podcastRoundResponse.rawValue:
 						let chunkSize = parsed.payloadData?.count ?? 0

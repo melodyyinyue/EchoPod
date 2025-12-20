@@ -27,6 +27,26 @@ struct EchoComposerView: View {
 				StreamingPlayerView(player: streamingPlayer)
 			}
 
+			// 状态文本显示
+			if let statusText {
+				HStack {
+					if statusText.contains("失败") || statusText.contains("请先") || statusText.contains("请输入") {
+						Image(systemName: "exclamationmark.triangle.fill")
+							.foregroundStyle(.orange)
+					} else {
+						Image(systemName: "info.circle.fill")
+							.foregroundStyle(.blue)
+					}
+					Text(statusText)
+						.font(.caption)
+						.foregroundStyle(.secondary)
+				}
+				.padding(8)
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.background(Color(nsColor: .controlBackgroundColor))
+				.cornerRadius(6)
+			}
+
 			HStack {
 				if let currentEcho, currentEcho.status == "completed" {
 					NavigationLink {
@@ -52,6 +72,7 @@ struct EchoComposerView: View {
 
 	@MainActor
 	private func generate() async {
+		debugLog("=== 开始生成播客 ===", level: .info)
 		statusText = nil
 		currentEcho = nil
 		streamingPlayer.stop()
@@ -68,16 +89,21 @@ struct EchoComposerView: View {
 			return created
 		}()
 
+		debugLog("检查配置: appID=\(s.volcPodcastAppID?.prefix(8) ?? "nil")..., token=\(s.volcPodcastAccessToken?.isEmpty == false ? "已设置" : "未设置")", level: .info)
+		
 		guard let appID = s.volcPodcastAppID, !appID.isEmpty,
 			  let token = s.volcPodcastAccessToken, !token.isEmpty else {
+			debugLog("配置检查失败：APP ID 或 Access Token 未设置", level: .warning)
 			statusText = "请先在【设置】里填写播客生成的 APP ID 和 Access Token"
 			return
 		}
+		
+		debugLog("配置检查通过，开始生成...", level: .success)
 
 		isGenerating = true
 		defer { isGenerating = false }
 
-		// 立刻创建播客记录（状态为 generating）
+	// 立刻创建播客记录（状态为 generating）
 		let taskID = UUID().uuidString
 		let title = q.count > 24 ? String(q.prefix(24)) + "…" : q
 		let echo = EchoPodcast(id: taskID, question: q, title: title, status: "generating")
@@ -86,6 +112,10 @@ struct EchoComposerView: View {
 		try? modelContext.save()
 		currentEcho = echo
 
+		// 更新共享播放信息（让状态栏显示正确的标题）
+		CurrentPlayingInfo.shared.setEchoPodcast(title: title, coverURL: nil)
+		defer { CurrentPlayingInfo.shared.clearEchoPodcast() }
+		
 		// 开始流式播放
 		streamingPlayer.startStreaming()
 
@@ -93,11 +123,19 @@ struct EchoComposerView: View {
 			let resourceID = s.volcPodcastResourceID ?? "volc.service_type.10050"
 			let client = VolcPodcastTTSWebSocketClient(appID: appID, accessToken: token, resourceID: resourceID)
 			
+			// 收集脚本内容
+			var scriptSegments: [(speaker: String, text: String)] = []
+			
+			// 获取用户选择的主讲人
+			let speakers = s.speakerPair.speakers
+			debugLog("使用主讲人: \(s.speakerPair.displayName) - \(speakers)", level: .info)
+			
 			debugLog("开始调用 generatePodcastFromPrompt...", level: .info)
 			let (returnedTaskID, audioURL, localFileURL) = try await client.generatePodcastFromPrompt(
 				promptText: q,
 				inputID: "echopod_\(taskID)",
 				useHeadMusic: false,
+				speakers: speakers,
 				audioFormat: "mp3",
 				saveToLocalMP3: true,
 				onStatus: { text in
@@ -116,25 +154,77 @@ struct EchoComposerView: View {
 					Task { @MainActor in
 						streamingPlayer.appendAudioData(data)
 					}
+				},
+				onScript: { speaker, text in
+					Task { @MainActor in
+						scriptSegments.append((speaker: speaker, text: text))
+					}
 				}
 			)
 			
 			// 流式接收完成
 			streamingPlayer.finishStreaming()
 			
-			debugLog("生成完成! taskID=\(returnedTaskID), audioURL=\(audioURL), localFile=\(localFileURL?.path ?? "nil")", level: .success)
+			// 将脚本段落合并为完整脚本内容
+			let fullScript = scriptSegments.map { segment in
+				if segment.speaker.isEmpty {
+					return segment.text
+				} else {
+					return "【\(segment.speaker)】\(segment.text)"
+				}
+			}.joined(separator: "\n\n")
+			echo.scriptContent = fullScript
+			
+			debugLog("生成完成! taskID=\(returnedTaskID), audioURL=\(audioURL), localFile=\(localFileURL?.path ?? "nil"), script=\(fullScript.prefix(100))...", level: .success)
 
-			// 生成封面
+				// 生成封面
 			var coverURL: String?
 			if let coverKey = s.volcCoverAPIKey, !coverKey.isEmpty {
 				statusText = "生成封面中..."
 				echo.statusMessage = "生成封面中..."
 				try? modelContext.save()
 				
-                let base = URL(string: s.volcCoverBaseURL ?? "https://ark.cn-beijing.volces.com")
-                let coverClient = VolcEchoClient(podcastAPIKey: "", coverAPIKey: coverKey, coverBaseURL: base)
-                coverURL = try? await coverClient.generateCover(prompt: "播客封面：\(q)")
-                debugLog("封面生成结果: \(coverURL ?? "nil")", level: .info)
+				let base = URL(string: s.volcCoverBaseURL ?? "https://ark.cn-beijing.volces.com")
+				debugLog("封面生成配置: baseURL=\(base?.absoluteString ?? "nil"), keyLength=\(coverKey.count)", level: .info)
+				
+				let coverClient = VolcEchoClient(podcastAPIKey: "", coverAPIKey: coverKey, coverBaseURL: base)
+				// 优化的封面 Prompt：主题 + 艺术风格
+				let coverPrompt = """
+播客封面：\(q)，
+现代简约风格，渐变紫色背景，柔和光影，
+高级质感，抽象几何元素，细腻纹理，
+专业播客封面设计，高清画质
+"""
+				debugLog("封面 Prompt: \(coverPrompt.prefix(50))...", level: .send)
+				
+				do {
+					coverURL = try await coverClient.generateCover(prompt: coverPrompt)
+					if let urlString = coverURL, let remoteURL = URL(string: urlString) {
+						debugLog("封面生成成功: \(urlString)", level: .success)
+						
+						// 立即更新封面 URL，让 UI 先显示网络图片
+						echo.coverURL = urlString
+						try? modelContext.save()
+						
+						// 下载封面图片并保存
+						do {
+							let (data, _) = try await URLSession.shared.data(from: remoteURL)
+							let localCover = try EchoPodcastCacheService.localCoverURL(taskID: taskID)
+							try data.write(to: localCover)
+							echo.localCoverPath = localCover.path
+                            try? modelContext.save()
+							debugLog("封面已保存到本地: \(localCover.path)", level: .success)
+						} catch {
+							debugLog("封面保存失败: \(error.localizedDescription)", level: .warning)
+						}
+					} else {
+						debugLog("封面生成返回空结果", level: .warning)
+					}
+				} catch {
+					debugLog("封面生成失败: \(error.localizedDescription)", level: .error)
+				}
+			} else {
+				debugLog("跳过封面生成: API Key 未设置", level: .warning)
 			}
 
 			// 更新播客记录为完成状态

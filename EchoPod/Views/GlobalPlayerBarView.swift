@@ -4,6 +4,7 @@ import SwiftData
 struct GlobalPlayerBarView: View {
     @EnvironmentObject private var player: PlayerController
     @Environment(\.modelContext) private var modelContext
+    @ObservedObject private var playingInfo = CurrentPlayingInfo.shared
 
     @State private var currentEpisode: PodcastEpisode?
     @State private var currentEchoPodcast: EchoPodcast?
@@ -16,6 +17,10 @@ struct GlobalPlayerBarView: View {
     }
     
     private var displayTitle: String {
+        // 优先显示流式播放中的回音播客
+        if playingInfo.isStreamingEchoPodcast, let title = playingInfo.echoPodcastTitle {
+            return title
+        }
         if let ep = currentEpisode {
             return ep.title
         } else if let echo = currentEchoPodcast {
@@ -25,6 +30,9 @@ struct GlobalPlayerBarView: View {
     }
     
     private var displaySubtitle: String {
+        if playingInfo.isStreamingEchoPodcast {
+            return "EchoPod 回音播客 • 正在生成"
+        }
         if let ep = currentEpisode {
             return ep.feed?.title ?? ""
         } else if currentEchoPodcast != nil {
@@ -80,12 +88,27 @@ struct GlobalPlayerBarView: View {
         .padding(.vertical, 8)
         .background(.thickMaterial)
         .onAppear { refreshContent() }
-        .onChange(of: player.currentURL) { _, _ in refreshContent() }
+        		.onChange(of: player.currentURL) { _, _ in refreshContent() }
+		.onChange(of: playingInfo.currentEchoPodcast) { _, _ in refreshContent() }
     }
     
     @ViewBuilder
     private var coverView: some View {
-        if let ep = currentEpisode, let cover = coverURL(for: ep) {
+        // 优先显示流式播放中的回音播客封面
+        if playingInfo.isStreamingEchoPodcast {
+            if let coverURL = playingInfo.echoPodcastCoverURL {
+                AsyncImage(url: coverURL) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img.resizable().scaledToFill()
+                    default:
+                        streamingCover
+                    }
+                }
+            } else {
+                streamingCover
+            }
+        } else if let ep = currentEpisode, let cover = coverURL(for: ep) {
             AsyncImage(url: cover) { phase in
                 switch phase {
                 case .success(let img):
@@ -94,19 +117,39 @@ struct GlobalPlayerBarView: View {
                     defaultCover
                 }
             }
-        } else if let echo = currentEchoPodcast, let cover = echo.coverURL, let url = URL(string: cover) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let img):
-                    img.resizable().scaledToFill()
-                default:
+        } else if let echo = currentEchoPodcast {
+            // Echo Podcast 封面处理
+            Group {
+                if let path = echo.localCoverPath, FileManager.default.fileExists(atPath: path),
+                   let nsImage = NSImage(contentsOfFile: path) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .scaledToFill()
+                } else if let cover = echo.coverURL, let url = URL(string: cover) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img.resizable().scaledToFill()
+                        default:
+                            echoCover
+                        }
+                    }
+                } else {
                     echoCover
                 }
             }
-        } else if currentEchoPodcast != nil {
-            echoCover
         } else {
             defaultCover
+        }
+    }
+    
+    private var streamingCover: some View {
+        ZStack {
+            AppTheme.primaryGradient
+            Image(systemName: "waveform")
+                .foregroundStyle(.white)
+                .font(.caption)
+                .symbolEffect(.variableColor.iterative)
         }
     }
     
@@ -128,10 +171,21 @@ struct GlobalPlayerBarView: View {
         currentEchoPodcast = nil
         
         guard let url = player.currentURL else { return }
+        
+        // 优先检查手动设置的 EchoPodcast
+        if let echo = playingInfo.currentEchoPodcast {
+            let isAudioMatch = (echo.audioURL == url.absoluteString)
+            let isFileMatch = (echo.localFilePath != nil && url.isFileURL && url.path == echo.localFilePath)
+            if isAudioMatch || isFileMatch {
+                self.currentEchoPodcast = echo
+                return
+            }
+        }
+        
         let audio = url.absoluteString
         let path = url.isFileURL ? url.path : nil
         
-        // 先尝试查找 PodcastEpisode
+        // ... rest of logic
         if let p = path {
             let predicate: Predicate<PodcastEpisode> = #Predicate { ep in ep.localFilePath == p }
             var fd = FetchDescriptor<PodcastEpisode>(predicate: predicate)

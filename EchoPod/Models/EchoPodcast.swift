@@ -11,6 +11,7 @@ final class EchoPodcast {
 	var scriptContent: String?  // 播客脚本文本内容
 
 	var localFilePath: String?
+	var localCoverPath: String?
 	var downloadedAt: Date?
 
 	var createdAt: Date

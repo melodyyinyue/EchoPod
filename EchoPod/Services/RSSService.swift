@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import CryptoKit
 
 enum RSSError: Error {
 	case invalidURL
@@ -121,8 +122,19 @@ final class RSSService {
 
 		feed.title = parsed.channelTitle ?? feed.title
 		feed.author = parsed.channelAuthor ?? feed.author
+		feed.feedDescription = parsed.channelDescription ?? feed.feedDescription // 保存简介
 		feed.imageURL = parsed.channelImageURL ?? feed.imageURL
 		feed.lastFetchedAt = Date()
+
+		// 尝试下载封面
+		if let imgURLStr = feed.imageURL, let imgURL = URL(string: imgURLStr) {
+			// 如果没有本地路径，或者本地文件不存在，则下载
+			if feed.localCoverPath == nil || !FileManager.default.fileExists(atPath: feed.localCoverPath!) {
+				if let localPath = await downloadCover(url: imgURL, feedURL: feed.url) {
+					feed.localCoverPath = localPath
+				}
+			}
+		}
 
 		for item in parsed.items {
 			let guid = item.guid ?? item.audioURL
@@ -146,5 +158,30 @@ final class RSSService {
 				modelContext.insert(ep)
 			}
 		}
+	}
+
+	private func downloadCover(url: URL, feedURL: String) async -> String? {
+		do {
+			let (data, _) = try await session.data(from: url)
+			let appSupport = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+			let dir = appSupport.appendingPathComponent("EchoPod/RSSCovers", isDirectory: true)
+			try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+			
+			let name = sha256Hex(feedURL).prefix(16)
+			// 保留原始扩展名或默认 jpg，简单起见统一用 jpg 或者根据 response mime type。
+			// 这里简单用 jpg
+			let fileURL = dir.appendingPathComponent("\(name).jpg")
+			
+			try data.write(to: fileURL)
+			return fileURL.path
+		} catch {
+			print("Download cover failed: \(error)")
+			return nil
+		}
+	}
+
+	private func sha256Hex(_ s: String) -> String {
+		let digest = SHA256.hash(data: Data(s.utf8))
+		return digest.map { String(format: "%02x", $0) }.joined()
 	}
 }
