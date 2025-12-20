@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0A599051C0E9110299E1EAF6 /* PodcastEpisode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA9CF74ABC5B3504BDF5938 /* PodcastEpisode.swift */; };
+		11F941EDA365EEFCCFE8FAF4 /* DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCCBEF965D510EE4B77B0892 /* DebugLogStore.swift */; };
 		1AC219034CCCBF7BC8BBE28F /* EpisodeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82AF9A4F3F63B2A9499043F0 /* EpisodeDetailView.swift */; };
 		1DC42F721ED729C0F089BBD2 /* SubscriptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35C0E26279CD970254913B2 /* SubscriptionsView.swift */; };
 		2396019E56A9E6F81ECA1E3C /* EchoPodcastsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187F1F2945873B0C48F068E6 /* EchoPodcastsView.swift */; };
@@ -22,10 +23,12 @@
 		5B07B84BA1509754F5033001 /* EchoPodcastDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23080CB54DF6DCABAC80CBA3 /* EchoPodcastDetailView.swift */; };
 		63F38D819108BD88680A43AB /* PodcastFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6692CA5F27D3EBD5067E470C /* PodcastFeed.swift */; };
 		6757724B5B80887AF452699D /* EchoPodApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EE4A3C9DB1742A08E3FA9B /* EchoPodApp.swift */; };
+		6E702E77C55E83331F57EB71 /* DebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC92B7B0614B297C9B2D4474 /* DebugView.swift */; };
 		725C3D3CCB1C7FBBB2AC5A5E /* EpisodeRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FED72EEEBEDD5B5BD34B767 /* EpisodeRow.swift */; };
 		88C860D2CFD20D6DCAB509F8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5A70A8BA6DD6AC01683796 /* SettingsView.swift */; };
 		88E4D327BCE2DE9B5BFC5C2A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4B3A5497ADBA1E06CC772856 /* Assets.xcassets */; };
 		8F0CFE5D1E10D395AD24EA86 /* PlayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B61DACC07737F183DEEFD506 /* PlayerController.swift */; };
+		B18ACEA9770620D6C6B1CC4C /* StreamingAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF8FA446983CA626E88740D /* StreamingAudioPlayer.swift */; };
 		BBA0178794F6AAA0478764A1 /* RSSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E61B6096A98B82B518928D4 /* RSSParser.swift */; };
 		DEC777006D4773C2B99287E0 /* EchoPodcast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29548222E6A53A91E9AFA32A /* EchoPodcast.swift */; };
 		F40AA59A54D99EAC39539E1C /* DateParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6F44BF8F9A5B90A03B05A7 /* DateParsing.swift */; };
@@ -48,6 +51,7 @@
 		4D8B857415B8A0D7B47A561E /* FeedDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDetailView.swift; sourceTree = "<group>"; };
 		4EE8FCE7E84C229A8C775D9D /* VolcPodcastTTSWebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolcPodcastTTSWebSocketClient.swift; sourceTree = "<group>"; };
 		4F430288BE75F1F27C312069 /* EchoPod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EchoPod.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FF8FA446983CA626E88740D /* StreamingAudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingAudioPlayer.swift; sourceTree = "<group>"; };
 		50EE4A3C9DB1742A08E3FA9B /* EchoPodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoPodApp.swift; sourceTree = "<group>"; };
 		6692CA5F27D3EBD5067E470C /* PodcastFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastFeed.swift; sourceTree = "<group>"; };
 		7C6178149C43865DE6AC4282 /* AllEpisodesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllEpisodesView.swift; sourceTree = "<group>"; };
@@ -63,7 +67,9 @@
 		C35C0E26279CD970254913B2 /* SubscriptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsView.swift; sourceTree = "<group>"; };
 		C437C798EC7627B83BC86CA0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D659B7A56D5826224CDA0575 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		DC92B7B0614B297C9B2D4474 /* DebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugView.swift; sourceTree = "<group>"; };
 		DD5A70A8BA6DD6AC01683796 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FCCBEF965D510EE4B77B0892 /* DebugLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -71,12 +77,14 @@
 			isa = PBXGroup;
 			children = (
 				9D6F44BF8F9A5B90A03B05A7 /* DateParsing.swift */,
+				FCCBEF965D510EE4B77B0892 /* DebugLogStore.swift */,
 				B010CAFD70C025684622F258 /* EchoPodcastCacheService.swift */,
 				2785467DADA077FACC26BC44 /* EpisodeCacheService.swift */,
 				A869D053E98242BC202CE5B0 /* EpisodeDownloadManager.swift */,
 				B61DACC07737F183DEEFD506 /* PlayerController.swift */,
 				0E61B6096A98B82B518928D4 /* RSSParser.swift */,
 				A3791A32EDBC462DE1622907 /* RSSService.swift */,
+				4FF8FA446983CA626E88740D /* StreamingAudioPlayer.swift */,
 				0F892E642A640A02217E2AC3 /* VolcEchoClient.swift */,
 				4EE8FCE7E84C229A8C775D9D /* VolcPodcastTTSWebSocketClient.swift */,
 			);
@@ -88,6 +96,7 @@
 			children = (
 				00567D87F5DF92611508213B /* AddSubscriptionSheet.swift */,
 				7C6178149C43865DE6AC4282 /* AllEpisodesView.swift */,
+				DC92B7B0614B297C9B2D4474 /* DebugView.swift */,
 				9D5E1AE4890F229289966677 /* EchoComposerView.swift */,
 				23080CB54DF6DCABAC80CBA3 /* EchoPodcastDetailView.swift */,
 				187F1F2945873B0C48F068E6 /* EchoPodcastsView.swift */,
@@ -223,6 +232,8 @@
 				F6D9E41F50C6DAF1E42F906D /* AllEpisodesView.swift in Sources */,
 				49D179B57E19F6F92A302732 /* AppSettings.swift in Sources */,
 				F40AA59A54D99EAC39539E1C /* DateParsing.swift in Sources */,
+				11F941EDA365EEFCCFE8FAF4 /* DebugLogStore.swift in Sources */,
+				6E702E77C55E83331F57EB71 /* DebugView.swift in Sources */,
 				2D691D9B5E9A40D3E62E36E1 /* EchoComposerView.swift in Sources */,
 				6757724B5B80887AF452699D /* EchoPodApp.swift in Sources */,
 				DEC777006D4773C2B99287E0 /* EchoPodcast.swift in Sources */,
@@ -241,6 +252,7 @@
 				FF089CE2E40BB3347F7FE020 /* RSSService.swift in Sources */,
 				537708C36F1F06A83DE63A2C /* RootView.swift in Sources */,
 				88C860D2CFD20D6DCAB509F8 /* SettingsView.swift in Sources */,
+				B18ACEA9770620D6C6B1CC4C /* StreamingAudioPlayer.swift in Sources */,
 				1DC42F721ED729C0F089BBD2 /* SubscriptionsView.swift in Sources */,
 				4F6FB6FBBAEE6FF7E8677111 /* VolcEchoClient.swift in Sources */,
 				38A4DC3B1701BECAB80E8994 /* VolcPodcastTTSWebSocketClient.swift in Sources */,
