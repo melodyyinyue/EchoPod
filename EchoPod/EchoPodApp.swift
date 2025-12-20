@@ -24,10 +24,16 @@ struct EchoPodApp: App {
 		.modelContainer(modelContainer)
 
 		MenuBarExtra("EchoPod", systemImage: "waveform") {
-			NavigationStack {
-				EchoComposerView()
+			VStack(spacing: 8) {
+				GlobalPlayerBarView()
 					.environmentObject(player)
 					.environmentObject(downloads)
+				Divider()
+				NavigationStack {
+					EchoComposerView()
+						.environmentObject(player)
+						.environmentObject(downloads)
+				}
 			}
 		}
 		.menuBarExtraStyle(.window)

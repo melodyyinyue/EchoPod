@@ -8,6 +8,7 @@ final class EchoPodcast {
 	var title: String
 	var audioURL: String?  // 改为可选，生成中时为 nil
 	var coverURL: String?
+	var scriptContent: String?  // 播客脚本文本内容
 
 	var localFilePath: String?
 	var downloadedAt: Date?

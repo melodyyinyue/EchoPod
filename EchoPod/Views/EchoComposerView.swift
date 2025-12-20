@@ -15,18 +15,12 @@ struct EchoComposerView: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 12) {
-			Text("回音播客")
+			Text("EchoPod")
 				.font(.headline)
 
-			TextField("输入你感兴趣的问题…", text: $question, axis: .vertical)
+			TextField("输入你想了解的知识、概念、问题…", text: $question, axis: .vertical)
 				.lineLimit(3...6)
 				.textFieldStyle(.roundedBorder)
-
-			if let statusText {
-				Text(statusText)
-					.font(.caption)
-					.foregroundStyle(.secondary)
-			}
 			
 			// 流式播放控件
 			if streamingPlayer.isStreaming || streamingPlayer.isPlaying || streamingPlayer.bufferedDuration > 0 {
@@ -34,19 +28,22 @@ struct EchoComposerView: View {
 			}
 
 			HStack {
-				Button(isGenerating ? "生成中..." : "生成") {
-					Task { @MainActor in await generate() }
-				}
-				.disabled(isGenerating)
-
 				if let currentEcho, currentEcho.status == "completed" {
-					Spacer()
 					NavigationLink {
 						EchoPodcastDetailView(item: currentEcho)
 					} label: {
 						Text("查看详情")
 					}
 				}
+				
+				Spacer()
+				
+				Button(isGenerating ? "生成中..." : "生成") {
+					Task { @MainActor in await generate() }
+				}
+				.buttonStyle(.borderedProminent)
+				.tint(AppTheme.primary)
+				.disabled(isGenerating)
 			}
 		}
 		.frame(width: 360)
@@ -105,6 +102,13 @@ struct EchoComposerView: View {
 				saveToLocalMP3: true,
 				onStatus: { text in
 					Task { @MainActor in
+						// 过滤掉包含技术信息的状态文本
+						if text.contains("zh_male") || text.contains("zh_female") ||
+						   text.contains("saturn") || text.contains("bigtts") ||
+						   text.contains("dayixiansheng") || text.contains("_v2_") {
+							// 不显示包含模型 ID 的技术信息
+							return
+						}
 						statusText = text
 					}
 				},
@@ -127,9 +131,10 @@ struct EchoComposerView: View {
 				echo.statusMessage = "生成封面中..."
 				try? modelContext.save()
 				
-				let coverClient = VolcEchoClient(podcastAPIKey: "", coverAPIKey: coverKey)
-				coverURL = try? await coverClient.generateCover(prompt: "播客封面：\(q)")
-				debugLog("封面生成结果: \(coverURL ?? "nil")", level: .info)
+                let base = URL(string: s.volcCoverBaseURL ?? "https://ark.cn-beijing.volces.com")
+                let coverClient = VolcEchoClient(podcastAPIKey: "", coverAPIKey: coverKey, coverBaseURL: base)
+                coverURL = try? await coverClient.generateCover(prompt: "播客封面：\(q)")
+                debugLog("封面生成结果: \(coverURL ?? "nil")", level: .info)
 			}
 
 			// 更新播客记录为完成状态

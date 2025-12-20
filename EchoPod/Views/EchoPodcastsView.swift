@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct EchoPodcastsView: View {
+	@Environment(\.modelContext) private var modelContext
 	@Query(sort: [SortDescriptor(\EchoPodcast.createdAt, order: .reverse)])
 	private var items: [EchoPodcast]
 
@@ -12,17 +13,85 @@ struct EchoPodcastsView: View {
 					ContentUnavailableView("还没有回音播客", systemImage: "waveform", description: Text("在菜单栏图标里输入问题即可生成。"))
 						.frame(maxWidth: .infinity, maxHeight: .infinity)
 				} else {
-					List(items) { item in
-						NavigationLink {
-							EchoPodcastDetailView(item: item)
-						} label: {
-							EchoPodcastRow(item: item)
+					List {
+						ForEach(items) { item in
+							NavigationLink {
+								EchoPodcastDetailView(item: item)
+							} label: {
+								EchoPodcastRow(item: item)
+							}
+							.contextMenu {
+								Button(role: .destructive) {
+									deleteItem(item)
+								} label: {
+									Label("删除", systemImage: "trash")
+								}
+							}
 						}
+						.onDelete(perform: deleteItems)
 					}
 				}
 			}
-			.navigationTitle("我的回音播客")
+			.navigationTitle("我的回音")
+			.toolbar {
+				ToolbarItem(placement: .primaryAction) {
+					Menu {
+						Button(role: .destructive) {
+							clearFailedItems()
+						} label: {
+							Label("清理失败项", systemImage: "trash")
+						}
+						Button(role: .destructive) {
+							clearAllItems()
+						} label: {
+							Label("清空全部", systemImage: "trash.fill")
+						}
+					} label: {
+						Image(systemName: "ellipsis.circle")
+					}
+				}
+			}
 		}
+	}
+	
+	private func deleteItem(_ item: EchoPodcast) {
+		if let path = item.localFilePath {
+			try? FileManager.default.removeItem(atPath: path)
+		}
+		modelContext.delete(item)
+		try? modelContext.save()
+	}
+
+	private func deleteItems(at offsets: IndexSet) {
+		for index in offsets {
+			let item = items[index]
+			// 删除本地文件
+			if let path = item.localFilePath {
+				try? FileManager.default.removeItem(atPath: path)
+			}
+			modelContext.delete(item)
+		}
+		try? modelContext.save()
+	}
+
+	private func clearFailedItems() {
+		for item in items where item.isFailed {
+			if let path = item.localFilePath {
+				try? FileManager.default.removeItem(atPath: path)
+			}
+			modelContext.delete(item)
+		}
+		try? modelContext.save()
+	}
+
+	private func clearAllItems() {
+		for item in items {
+			if let path = item.localFilePath {
+				try? FileManager.default.removeItem(atPath: path)
+			}
+			modelContext.delete(item)
+		}
+		try? modelContext.save()
 	}
 }
 
@@ -57,21 +126,14 @@ struct EchoPodcastRow: View {
 					Text(item.title)
 						.font(.headline)
 					
-					if item.isGenerating {
-						ProgressView()
-							.scaleEffect(0.6)
-					} else if item.isFailed {
+					if item.isFailed {
 						Image(systemName: "exclamationmark.triangle.fill")
 							.foregroundStyle(.red)
 							.font(.caption)
 					}
 				}
 				
-				if item.isGenerating, let msg = item.statusMessage {
-					Text(msg)
-						.font(.caption)
-						.foregroundStyle(.orange)
-				} else if item.isFailed, let err = item.errorMessage {
+				if item.isFailed, let err = item.errorMessage {
 					Text("失败: \(err)")
 						.font(.caption)
 						.foregroundStyle(.red)
@@ -101,11 +163,11 @@ struct EchoPodcastRow: View {
 	private var defaultCover: some View {
 		ZStack {
 			LinearGradient(
-				colors: [.purple.opacity(0.6), .blue.opacity(0.6)],
+				colors: [AppTheme.primary.opacity(0.6), .blue.opacity(0.6)],
 				startPoint: .topLeading,
 				endPoint: .bottomTrailing
 			)
-			Image(systemName: item.isGenerating ? "waveform" : "mic.fill")
+			Image(systemName: "mic.fill")
 				.foregroundStyle(.white)
 				.font(.title3)
 		}

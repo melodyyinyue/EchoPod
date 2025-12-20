@@ -10,6 +10,7 @@ final class AppSettings {
 	var volcPodcastResourceID: String?
 
 	var volcCoverAPIKey: String?
+	var volcCoverBaseURL: String?
 	var updatedAt: Date
 
 	init(id: String = "singleton") {

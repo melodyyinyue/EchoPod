@@ -21,27 +21,40 @@ struct SubscriptionsView: View {
 					)
 					.frame(maxWidth: .infinity, maxHeight: .infinity)
 				} else {
-					List {
-						ForEach(feeds) { feed in
-							NavigationLink(value: feed) {
-								VStack(alignment: .leading, spacing: 4) {
-									Text(feed.title ?? feed.url)
-										.font(.headline)
-									Text(feed.url)
-										.font(.caption)
-										.foregroundStyle(.secondary)
-								}
-							}
-							.contextMenu {
-								Button(role: .destructive) {
-									unsubscribe(feed)
-								} label: {
-									Text("取消订阅")
-								}
-							}
-						}
-						.onDelete(perform: delete)
-					}
+                    List {
+                        ForEach(feeds) { feed in
+                            NavigationLink(value: feed) {
+                                HStack(spacing: 10) {
+                                    AsyncImage(url: URL(string: feed.imageURL ?? "")) { phase in
+                                        switch phase {
+                                        case .success(let img):
+                                            img.resizable().scaledToFill()
+                                        default:
+                                            LinearGradient(colors: [.gray.opacity(0.3), .gray.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                        }
+                                    }
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(feed.title ?? feed.url)
+                                            .font(.headline)
+                                        Text(feed.url)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    unsubscribe(feed)
+                                } label: {
+                                    Text("取消订阅")
+                                }
+                            }
+                        }
+                        .onDelete(perform: delete)
+                    }
 				}
 			}
 			.navigationTitle("我的订阅")

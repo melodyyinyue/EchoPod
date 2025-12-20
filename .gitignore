@@ -5,3 +5,7 @@ xcuserdata/
 *.xcuserstate
 *.xccheckout
 *.xcscmblueprint
+build/
+PodcastAPI.md
+ImageGenerationAPI.md
+RSS_ERROR_HANDLING_TEST.md

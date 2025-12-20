@@ -108,8 +108,34 @@ struct EchoPodcastDetailView: View {
 						}
 					}
 				}
+				
+				// 播客脚本内容
+				if let script = item.scriptContent, !script.isEmpty {
+					VStack(alignment: .leading, spacing: 12) {
+						HStack {
+							Image(systemName: "doc.text")
+								.foregroundStyle(AppTheme.primary)
+							Text("播客内容")
+								.font(.headline)
+							Spacer()
+						}
+						
+						Divider()
+						
+						Text(script)
+							.font(.body)
+							.lineSpacing(6)
+							.textSelection(.enabled)
+					}
+					.padding()
+					.background(
+						RoundedRectangle(cornerRadius: 12, style: .continuous)
+							.fill(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+					)
+				}
 			}
 			.padding()
+			.padding(.bottom, 60) // 为全局播放条留空间
 		}
 		.navigationTitle("回音播客")
 	}
@@ -137,7 +163,7 @@ struct EchoPodcastDetailView: View {
 	private var defaultCover: some View {
 		ZStack {
 			LinearGradient(
-				colors: [.purple.opacity(0.6), .blue.opacity(0.6)],
+				colors: [AppTheme.primary.opacity(0.6), .blue.opacity(0.6)],
 				startPoint: .topLeading,
 				endPoint: .bottomTrailing
 			)

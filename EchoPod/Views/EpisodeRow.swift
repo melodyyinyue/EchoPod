@@ -43,20 +43,22 @@ struct EpisodeRow: View {
 					Image(systemName: "arrow.down.circle.fill")
 						.foregroundStyle(.secondary)
 				}
-				Button {
-					guard let url = effectiveURL else { return }
-					if isCurrent {
-						player.togglePlayPause()
-					} else {
-						player.play(url: url)
-					}
-				} label: {
-					Image(systemName: (isCurrent && player.isPlaying) ? "pause.fill" : "play.fill")
-				}
-				.buttonStyle(.borderless)
-				.disabled(effectiveURL == nil)
-			}
-		}
-		.padding(.vertical, 4)
-	}
+                Button {
+                    guard let url = effectiveURL else { return }
+                    if isCurrent {
+                        player.togglePlayPause()
+                    } else {
+                        player.play(url: url)
+                    }
+                } label: {
+                    Image(systemName: (isCurrent && player.isPlaying) ? "pause.fill" : "play.fill")
+                        .font(.title3)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(TactileButtonStyle())
+                .disabled(effectiveURL == nil)
+            }
+        }
+        .padding(.vertical, 4)
+    }
 }
