@@ -1,5 +1,86 @@
 # EchoPod 回音播客
 
+**English** | [中文](#中文介绍)
+
+EchoPod is a native macOS podcast client and AI podcast creation tool. It lets you subscribe to and play RSS podcasts, generate conversational AI podcast episodes from a question, create AI covers, save scripts, and keep generated audio locally.
+
+## Download
+
+- Latest DMG: [Download EchoPod.dmg](https://github.com/melodyyinyue/EchoPod/releases/download/v0.1.0/EchoPod.dmg)
+- All versions: [GitHub Releases](https://github.com/melodyyinyue/EchoPod/releases)
+- Installation: download and open `EchoPod.dmg`, then drag the app into `Applications`.
+
+## Features
+
+- RSS subscriptions: add podcast feeds, parse episode lists, and view episode details.
+- Playback and downloads: play episodes, use the global player bar, cache content, and keep audio offline.
+- AI Echo Podcasts: enter a question and generate a two-host conversational podcast episode.
+- Script view: review generated scripts and use them as reading context while listening.
+- AI cover design: generate podcast covers from topic prompts and keep cover design history.
+- Personalization: configure host styles, Volcengine voice generation, and image generation APIs.
+- Demo content: built-in sample audio and cover assets for a quick first-run experience.
+
+## Tech Stack
+
+- SwiftUI: native macOS user interface.
+- SwiftData: local data models for feeds, episodes, AI podcasts, and cover history.
+- AVFoundation: audio playback and playback state handling.
+- URLSession / WebSocket: RSS fetching, audio generation, and image generation requests.
+- Volcengine: AI podcast voice generation and Seedream image generation.
+
+## Project Structure
+
+```text
+EchoPod/
+├── Models/          # SwiftData models
+├── Services/        # RSS, playback, cache, and AI generation services
+├── Views/           # SwiftUI views and components
+├── Resources/       # App icons and demo assets
+└── Info.plist       # macOS app configuration
+```
+
+## Run from Source
+
+1. Open `EchoPod.xcodeproj` in Xcode.
+2. Select a macOS run destination.
+3. Click Run to launch the app.
+
+Requirements: macOS 14.0 or later and Swift 6.0.
+
+## API Configuration
+
+Open Settings in the app and configure:
+
+- Podcast generation: `APP ID`, `Access Token`, and `Resource ID`.
+- Cover generation: `API Key` and `Base URL`.
+- Default cover generation Base URL: `https://ark.cn-beijing.volces.com`.
+
+Cover generation uses the Volcengine Ark image generation endpoint:
+
+```text
+POST https://ark.cn-beijing.volces.com/api/v3/images/generations
+```
+
+If cover generation fails because the host cannot be resolved, check your network, proxy, API key, and Base URL settings.
+
+## Usage
+
+1. Add RSS podcast feeds in Subscriptions.
+2. Browse and play episodes in All Episodes.
+3. Enter a question from the menu bar entry to generate an AI podcast.
+4. Review generated audio and scripts in My Echoes.
+5. Generate standalone podcast covers in Cover Design.
+
+## Notes
+
+- AI generation depends on external services and requires valid Volcengine credentials.
+- Generated image URLs may expire, so cache or save the images when needed.
+- The project currently targets macOS desktop usage; mobile adaptation is not the focus yet.
+
+---
+
+## 中文介绍
+
 EchoPod 回音播客是一款 macOS 播客客户端与 AI 播客创作工具。它既可以订阅、浏览和播放 RSS 播客，也可以根据用户输入的问题生成一段 AI 播客，并自动生成封面、保存脚本和本地音频。
 
 ## 直接下载
