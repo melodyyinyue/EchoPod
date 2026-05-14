@@ -2,6 +2,12 @@
 
 EchoPod 回音播客是一款 macOS 播客客户端与 AI 播客创作工具。它既可以订阅、浏览和播放 RSS 播客，也可以根据用户输入的问题生成一段 AI 播客，并自动生成封面、保存脚本和本地音频。
 
+## 直接下载
+
+- 最新版 DMG：[下载 EchoPod.dmg](https://github.com/melodyyinyue/EchoPod/releases/download/v0.1.0/EchoPod.dmg)
+- 所有版本：[GitHub Releases](https://github.com/melodyyinyue/EchoPod/releases)
+- 安装方式：下载并打开 `EchoPod.dmg`，将应用拖入 `Applications` 后启动。
+
 ## 主要功能
 
 - RSS 播客订阅：添加播客源，解析节目列表，查看单集详情。
