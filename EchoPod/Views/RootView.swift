@@ -24,6 +24,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
 
 struct RootView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var selection: SidebarItem? = .allEpisodes
 
     var body: some View {
@@ -33,7 +34,7 @@ struct RootView: View {
                     .tag(item)
                 }
             .listStyle(.sidebar)
-            .navigationTitle("EchoPod")
+            .navigationTitle("回音播客")
         } detail: {
             switch selection {
             case .allEpisodes:
@@ -56,6 +57,9 @@ struct RootView: View {
             GlobalPlayerBarView()
                 .frame(maxWidth: .infinity)
                 .shadow(radius: 4)
+        }
+        .onAppear {
+            DataLoader.shared.loadDemoData(modelContext: modelContext)
         }
     }
 }

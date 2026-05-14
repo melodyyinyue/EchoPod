@@ -31,12 +31,12 @@ struct GlobalPlayerBarView: View {
     
     private var displaySubtitle: String {
         if playingInfo.isStreamingEchoPodcast {
-            return "EchoPod 回音播客 • 正在生成"
+            return "回音播客 • 正在生成"
         }
         if let ep = currentEpisode {
             return ep.feed?.title ?? ""
         } else if currentEchoPodcast != nil {
-            return "EchoPod 回音播客"
+            return "回音播客"
         }
         return ""
     }

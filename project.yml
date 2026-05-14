@@ -21,8 +21,8 @@ targets:
     info:
       path: EchoPod/Info.plist
       properties:
-        CFBundleDisplayName: EchoPod
-        CFBundleName: EchoPod
+        CFBundleDisplayName: 回音播客
+        CFBundleName: 回音播客
         LSApplicationCategoryType: public.app-category.music
     settings:
       base:

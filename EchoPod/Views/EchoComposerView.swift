@@ -15,7 +15,7 @@ struct EchoComposerView: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 12) {
-			Text("EchoPod")
+			Text("回音播客")
 				.font(.headline)
 
 			TextField("输入你想了解的知识、概念、问题…", text: $question, axis: .vertical)
@@ -48,14 +48,7 @@ struct EchoComposerView: View {
 			}
 
 			HStack {
-				if let currentEcho, currentEcho.status == "completed" {
-					NavigationLink {
-						EchoPodcastDetailView(item: currentEcho)
-					} label: {
-						Text("查看详情")
-					}
-				}
-				
+
 				Spacer()
 				
 				Button(isGenerating ? "生成中..." : "生成") {
